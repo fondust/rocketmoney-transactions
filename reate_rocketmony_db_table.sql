@@ -10,6 +10,17 @@
 -- Create or alter a view 'credit_card_summary' to summarize credit card transactions by institution, account, year, and month.
 -- Declare variables and set values to get the current month's credit card summary or an offset month summary.
 -- Select and display the credit card summary for the specified month and year.
+
+
+PRE-REQUISITES:
+-- Install SQL Server Express 2022: https://learn.microsoft.com/en-us/sql/database-engine/configure-windows/sql-server-express-localdb?view=sql-server-ver16
+-- In CMD (not pwsh):
+
+REM Create an instance of LocalDB
+"C:\Program Files\Microsoft SQL Server\160\Tools\Binn\SqlLocalDB.exe" create finances
+REM Start the instance of LocalDB
+"C:\Program Files\Microsoft SQL Server\160\Tools\Binn\SqlLocalDB.exe" start finances
+
 */
 
 -- Create the 'finances' database with a specific collation
