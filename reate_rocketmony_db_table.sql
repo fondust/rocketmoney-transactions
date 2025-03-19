@@ -107,25 +107,47 @@ GO
 
 -- Create or alter a view 'credit_card_summary' to summarize credit card transactions by institution, account, year, and month
 CREATE OR ALTER VIEW credit_card_summary AS
+WITH LastPaymentDate AS (
+    SELECT 
+        account_number,
+        MAX(date) AS last_payment_date
+    FROM 
+        rocketmoney_transactions_view
+    WHERE 
+        amount < 0 
+        AND account_type = 'Credit Card'
+    GROUP BY 
+        account_number
+)
 SELECT 
-    institution_name, -- Name of the financial institution
-    account_name, -- Name of the account
-    account_number, -- Account number
-    DATEPART(YEAR, date) AS year, -- Year of the transaction
-    DATEPART(MONTH, date) AS month, -- Month of the transaction
-    SUM(debit) AS total_spent, -- Total amount spent
-    SUM(credit) AS total_paid, -- Total amount paid
-    SUM(debit) - SUM(credit) AS difference -- Difference between spent and paid amounts
+    rv.institution_name, -- Name of the financial institution
+    rv.account_name, -- Name of the account
+    rv.account_number, -- Account number
+    DATEPART(YEAR, rv.date) AS year, -- Year of the transaction
+    DATEPART(MONTH, rv.date) AS month, -- Month of the transaction
+    SUM(rv.debit) AS total_spent, -- Total amount spent
+    SUM(rv.credit) AS total_paid, -- Total amount paid
+    SUM(rv.debit) - SUM(rv.credit) AS difference, -- Difference between spent and paid amounts
+    SUM(CASE 
+        WHEN rv.date > lp.last_payment_date 
+        THEN rv.debit - rv.credit 
+        ELSE 0 
+    END) AS difference_since_last_payment -- Difference since last payment
+                                          -- ! Important: Transactions can occur on the same date.
+                                          -- Meaning that this column may not reflect transactions that occur later in the day.
 FROM 
-    rocketmoney_transactions_view
+    rocketmoney_transactions_view rv
+LEFT JOIN 
+    LastPaymentDate lp ON rv.account_number = lp.account_number
 WHERE 
-    account_type = 'Credit Card' -- Filter for credit card transactions
+    rv.account_type = 'Credit Card' -- Filter for credit card transactions
 GROUP BY 
-    institution_name,
-    account_name,
-    account_number,
-    DATEPART(YEAR, date),
-    DATEPART(MONTH, date); -- Group by institution, account, year, and month
+    rv.institution_name,
+    rv.account_name,
+    rv.account_number,
+    DATEPART(YEAR, rv.date),
+    DATEPART(MONTH, rv.date),
+    lp.last_payment_date; -- Group by institution, account, year, month, and last payment date
 GO
 
 /* --- Actual Query --- */  
